@@ -1,5 +1,5 @@
 use anchor_lang::prelude::AccountMeta;
-use anyhow::Result;
+use anyhow::{Result, Error};
 
 use solana_sdk::{ pubkey, pubkey::Pubkey, instruction::Instruction};
 use rust_decimal::Decimal;
@@ -36,8 +36,16 @@ impl SymmetryTokenSwap {
     const SYMMETRY_PROGRAM_SWAP_INSTRUCTION_ID: u64 = 219478785678209410;
 
     pub fn from_keyed_account(fund_state_account: &KeyedAccount, token_list_account: &KeyedAccount) -> Result<Self> {
-        let fund_state = FundState::load(&fund_state_account.account.data);
-        let token_list = TokenList::load(&token_list_account.account.data);
+        let fund_state_loader = FundState::load(&fund_state_account.account.data);
+        if let Err(e) = fund_state_loader {
+            return Err(e);
+        }
+        let fund_state = fund_state_loader.unwrap();
+        let token_list_loader = TokenList::load(&token_list_account.account.data);
+        if let Err(e) = token_list_loader {
+            return Err(e);
+        }
+        let token_list = token_list_loader.unwrap();
 
         Ok(Self {
             key: fund_state_account.key,
@@ -76,10 +84,11 @@ impl SymmetryTokenSwap {
         }
     }
 
-    pub fn mul_div(a: u64, b: u64, c: u64,) -> u64 {
+    pub fn mul_div(a: u64, b: u64, c: u64) -> u64 {
         match c {
             0 => 0,
-            _ => ((a as u128) * (b as u128) / (c as u128)) as u64
+            _ => (a as u128).checked_mul(b as u128).unwrap_or_default()
+                            .checked_div(c as u128).unwrap_or_default().try_into().unwrap_or_default()
         }
     }
 
@@ -195,7 +204,7 @@ impl SymmetryTokenSwap {
                 SymmetryTokenSwap::mul_div(value_after_tw, token_settings.token_swap_fee_after_tw_bps as u64, BPS_DIVIDER);
             
             let amount_bought = SymmetryTokenSwap::usd_value_to_amount(value_in_interval - fees, token_settings.decimals, current_price);
-            
+
             current_output_amount += amount_bought;
             value_left -= value_in_interval;
             if amount_bought > current_amount
@@ -254,14 +263,28 @@ impl Amm for SymmetryTokenSwap {
     }
 
     fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-        self.curve_data = CurveData::load(try_get_account_data(account_map, &SymmetryTokenSwap::CURVE_DATA_ADDRESS)?);
-        self.fund_state = FundState::load(try_get_account_data(account_map, &self.key)?);
+        let curve_data_loader = CurveData::load(try_get_account_data(account_map, &SymmetryTokenSwap::CURVE_DATA_ADDRESS)?);
+        if let Err(e) = curve_data_loader {
+            return Err(e);
+        }
+        self.curve_data = curve_data_loader.unwrap();
+
+        let fund_state_loader = FundState::load(try_get_account_data(account_map, &self.key)?);
+        if let Err(e) = fund_state_loader {
+            return Err(e);
+        }
+        self.fund_state = fund_state_loader.unwrap();
+
         for i in 0..MAX_TOKENS_IN_ASSET_POOL {
             if self.token_list.list[i].oracle_account != Pubkey::default() {
-                self.token_list.list[i].oracle_price = OraclePrice::load(
+                let oracle_loader = OraclePrice::load(
                     try_get_account_data(account_map, &self.token_list.list[i].oracle_account)?,
                     self.token_list.list[i]
                 );
+                if let Err(e) = oracle_loader {
+                    return Err(e);
+                }
+                self.token_list.list[i].oracle_price = oracle_loader.unwrap();
             }
         }
 
@@ -269,24 +292,43 @@ impl Amm for SymmetryTokenSwap {
     }
 
     fn quote(&self, quote_params: &QuoteParams) -> Result<Quote> {
-        
+
         let fund_state = self.fund_state;
         let token_list = self.token_list;
         let curve_data = self.curve_data;
 
         let from_amount: u64 = quote_params.in_amount;
-        let from_token_id: u64 = token_list.list.iter()
-            .position(|&x| x.token_mint == quote_params.input_mint).unwrap() as u64;
-        let to_token_id: u64 = token_list.list.iter()
-            .position(|&x| x.token_mint == quote_params.output_mint).unwrap() as u64;
+        let from_token_id_option = token_list.list.iter().position(|&x| x.token_mint == quote_params.input_mint);
+        let to_token_id_option = token_list.list.iter().position(|&x| x.token_mint == quote_params.output_mint);
+        
+        if from_token_id_option.is_none() {
+            return Err(Error::msg("From token not found in supported tokens"))
+        }
+        if to_token_id_option.is_none() {
+            return Err(Error::msg("To token not found in supported tokens"))
+        }
+    
+        let from_token_id: u64 = from_token_id_option.unwrap() as u64;
+        let to_token_id: u64 = to_token_id_option.unwrap() as u64;
     
         let from_token_settings = token_list.list[from_token_id as usize];
         let to_token_settings = token_list.list[to_token_id as usize];
     
-        let from_token_index: usize = fund_state.current_comp_token.iter()
-                            .position(|&x| x == (from_token_id as u64)).unwrap() as usize;
-        let to_token_index: usize = fund_state.current_comp_token.iter()
-                            .position(|&x| x == (to_token_id as u64)).unwrap() as usize;
+        let from_token_index_option = fund_state.current_comp_token.iter()
+            .position(|&x| x == (from_token_id as u64));
+        let to_token_index_option = fund_state.current_comp_token.iter()
+            .position(|&x| x == (to_token_id as u64));
+    
+        if from_token_index_option.is_none() {
+            return Err(Error::msg("From token not found in the fund composition"))
+        }
+        if to_token_index_option.is_none() {
+            return Err(Error::msg("To token not found in the fund composition"))
+        }
+
+        let from_token_index: usize = from_token_index_option.unwrap() as usize;
+        let to_token_index: usize = to_token_index_option.unwrap() as usize;
+        
 
         let mut fund_worth = 0;
         for i in 0..(fund_state.num_of_tokens as usize) {
@@ -294,7 +336,7 @@ impl Amm for SymmetryTokenSwap {
             let token_settings = token_list.list[token];
             let token_price = token_settings.oracle_price;
             if token_price.oracle_live == 0 {
-                panic!()
+                return Err(Error::msg("One of the tokens has offline oracle status"))
             }
             fund_worth += SymmetryTokenSwap::amount_to_usd_value(
                 fund_state.current_comp_amount[i],
@@ -401,7 +443,7 @@ impl Amm for SymmetryTokenSwap {
         );
         let mut safe_to_amount = (amount_without_fees - fund_fee) * 101 / 100;
         if safe_to_amount > fund_state.current_comp_amount[to_token_index] {
-            safe_to_amount =fund_state.current_comp_amount[to_token_index];
+            safe_to_amount = fund_state.current_comp_amount[to_token_index];
         }
         let to_token_worth_after_swap= SymmetryTokenSwap::amount_to_usd_value(
             fund_state.current_comp_amount[to_token_index] - safe_to_amount,
@@ -411,8 +453,8 @@ impl Amm for SymmetryTokenSwap {
     
         fund_worth = fund_worth + from_token_worth_after_swap;
         fund_worth = fund_worth + to_token_worth_after_swap;
-        fund_worth = fund_worth - from_token_worth_before_swap;
-        fund_worth = fund_worth - to_token_worth_before_swap;
+        fund_worth = if fund_worth < from_token_worth_before_swap { 0 } else { fund_worth - from_token_worth_before_swap };
+        fund_worth = if fund_worth < to_token_worth_before_swap { 0 } else { fund_worth - to_token_worth_before_swap };
     
         let from_new_weight = SymmetryTokenSwap::mul_div(
             from_token_worth_after_swap,
@@ -446,11 +488,11 @@ impl Amm for SymmetryTokenSwap {
             fund_state.target_weight[to_token_index] == 0;
 
         if from_new_weight > allowed_from_target_weight && (!removing_dust) {
-            panic!()
+            return Err(Error::msg("From token weight exceeds max allowed weight"))
         }
         
         if to_new_weight < allowed_to_target_weight {
-            panic!()
+            return Err(Error::msg("To token weight exceeds min allowed weight"))
         }
 
         Ok(Quote {
@@ -479,8 +521,18 @@ impl Amm for SymmetryTokenSwap {
             jupiter_program_id
         } = swap_params;
         
-        let from_token_id: u64 = self.token_list.list.iter().position(|&x| x.token_mint == *source_mint).unwrap() as u64;
-        let to_token_id: u64 = self.token_list.list.iter().position(|&x| x.token_mint == *destination_mint).unwrap() as u64;
+        let from_token_id_option = self.token_list.list.iter().position(|&x| x.token_mint == *source_mint);
+        let to_token_id_option = self.token_list.list.iter().position(|&x| x.token_mint == *destination_mint);
+        
+        if from_token_id_option.is_none() {
+            return Err(Error::msg("From token not found in supported tokens"))
+        }
+        if to_token_id_option.is_none() {
+            return Err(Error::msg("To token not found in supported tokens"))
+        }
+
+        let from_token_id: u64 = from_token_id_option.unwrap() as u64;
+        let to_token_id: u64 = to_token_id_option.unwrap() as u64;
 
         let swap_to_fee: Pubkey = Pubkey::find_program_address(
             &[
