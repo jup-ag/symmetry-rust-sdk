@@ -1862,23 +1862,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jupiter-core"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anyhow",
- "jupiter-amm-interface",
- "lazy_static",
- "rust_decimal",
- "serde",
- "serde_json",
- "solana-client",
- "solana-sdk",
- "spl-token",
- "spl-token-swap",
-]
-
-[[package]]
 name = "keccak"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3927,6 +3910,23 @@ name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
+
+[[package]]
+name = "symmetry_math"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anyhow",
+ "jupiter-amm-interface",
+ "lazy_static",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "solana-client",
+ "solana-sdk",
+ "spl-token",
+ "spl-token-swap",
+]
 
 [[package]]
 name = "syn"

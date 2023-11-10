@@ -1,7 +1,5 @@
 [workspace]
-members = [
-    "jupiter-core",
-]
+members = ["symmetry_math"]
 
 [workspace.package]
 edition = "2021"

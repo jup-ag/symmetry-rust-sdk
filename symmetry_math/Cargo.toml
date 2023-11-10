@@ -1,5 +1,5 @@
 [package]
-name = "jupiter-core"
+name = "symmetry_math"
 version = "0.1.0"
 description = ""
 edition = { workspace = true }
