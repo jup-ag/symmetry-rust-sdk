@@ -71,7 +71,7 @@ impl SymmetryMath {
         let mut amount_left: u64 = amount;
         let mut current_price = price.sell_price;
 
-        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA + 1 {
+        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA {
             let step_amount = if step < NUM_OF_POINTS_IN_CURVE_DATA {
                 curve_data.amount[step]
             } else {
@@ -152,7 +152,7 @@ impl SymmetryMath {
         let mut value_left: u64 = value;
         let mut current_price = price.buy_price;
 
-        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA + 1 {
+        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA {
             let step_amount = if step < NUM_OF_POINTS_IN_CURVE_DATA {
                 curve_data.amount[step]
             } else {
