@@ -261,6 +261,17 @@ pub struct OraclePrice {
     pub oracle_live: u8,
 }
 
+impl Default for OraclePrice {
+    fn default() -> Self {
+        OraclePrice {
+            sell_price: 0,
+            avg_price: 0,
+            buy_price: 0,
+            oracle_live: 0, // set oracle live to 0
+        }
+    }
+}
+
 impl OraclePrice {
     #[inline]
     pub fn load<'a>(
