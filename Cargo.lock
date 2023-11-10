@@ -4460,6 +4460,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anyhow",
+ "bincode",
  "jupiter-amm-interface",
  "lazy_static",
  "rust_decimal",

@@ -1,7 +1,9 @@
+use anchor_lang::accounts::sysvar;
 use anchor_lang::prelude::AccountMeta;
-use anyhow::{Context, Error, Result};
+use anyhow::{anyhow, Context, Error, Result};
 
 use rust_decimal::Decimal;
+use solana_sdk::sysvar::clock::{self, Clock};
 use solana_sdk::{instruction::Instruction, pubkey, pubkey::Pubkey};
 
 use jupiter_amm_interface::Swap;
@@ -10,6 +12,7 @@ use jupiter_amm_interface::{
     SwapParams,
 };
 
+use super::accounts::mul_div;
 use crate::amms::accounts::{
     CurveData, FundState, OraclePrice, TokenList, TokenPriceData, TokenSettings,
 };
@@ -22,9 +25,10 @@ struct SymmetryTokenSwap {
     key: Pubkey,
     label: String,
     fund_state: FundState,
-    token_list: TokenList,
+    token_list: Option<TokenList>,
     curve_data: CurveData,
     program_id: Pubkey,
+    clock: Option<Clock>,
 }
 
 pub const SYMMETRY_PROGRAM_ADDRESS: Pubkey =
@@ -38,14 +42,7 @@ pub const SYMMETRY_PROGRAM_SWAP_INSTRUCTION_ID: u64 = 219478785678209410;
 pub struct SymmetryMath {}
 impl SymmetryMath {
     pub fn mul_div(a: u64, b: u64, c: u64) -> Option<u64> {
-        match c {
-            0 => Some(0),
-            _ => (a as u128)
-                .checked_mul(b as u128)?
-                .checked_div(c as u128)?
-                .try_into()
-                .ok(),
-        }
+        mul_div(a, b, c)
     }
 
     pub fn amount_to_usd_value(amount: u64, decimals: u8, price: u64) -> Result<u64> {
@@ -285,62 +282,67 @@ impl Amm for SymmetryTokenSwap {
     fn get_reserve_mints(&self) -> Vec<Pubkey> {
         let mut vec: Vec<Pubkey> = Vec::new();
         for i in 0..self.fund_state.num_of_tokens as usize {
-            if self.token_list.list[self.fund_state.current_comp_token[i] as usize].lp_on
-                != LP_DISABLED
-            {
-                vec.push(
-                    self.token_list.list[self.fund_state.current_comp_token[i] as usize].token_mint,
-                )
+            if let Some(token_list) = self.token_list {
+                if token_list.list[self.fund_state.current_comp_token[i] as usize].lp_on
+                    != LP_DISABLED
+                {
+                    vec.push(
+                        token_list.list[self.fund_state.current_comp_token[i] as usize].token_mint,
+                    )
+                }
             }
         }
         return vec;
     }
 
     fn get_accounts_to_update(&self) -> Vec<Pubkey> {
-        let mut accounts_to_update: Vec<Pubkey> = Vec::new();
-        accounts_to_update.push(CURVE_DATA_ADDRESS);
-        accounts_to_update.push(self.key);
-        for i in 0..MAX_TOKENS_IN_ASSET_POOL {
-            if self.token_list.list[i].oracle_account != Pubkey::default() {
-                accounts_to_update.push(self.token_list.list[i].oracle_account)
+        let mut accounts_to_update = Vec::with_capacity(4 + self.fund_state.num_of_tokens as usize);
+        accounts_to_update.extend([self.key, TOKEN_LIST_ADDRESS, CURVE_DATA_ADDRESS, clock::ID]);
+
+        if let Some(token_list) = self.token_list {
+            for i in 0..self.fund_state.num_of_tokens as usize {
+                accounts_to_update.push(
+                    token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
+                );
             }
         }
-        return accounts_to_update;
+
+        accounts_to_update
     }
 
     fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-        let curve_data_loader =
-            CurveData::load(try_get_account_data(account_map, &CURVE_DATA_ADDRESS)?);
-        if let Err(e) = curve_data_loader {
-            return Err(e);
-        }
-        self.curve_data = curve_data_loader.unwrap();
+        self.token_list = None;
+        let token_list = TokenList::load(try_get_account_data(account_map, &TOKEN_LIST_ADDRESS)?)?;
+        self.curve_data = CurveData::load(try_get_account_data(account_map, &CURVE_DATA_ADDRESS)?)?;
 
-        let fund_state_loader = FundState::load(try_get_account_data(account_map, &self.key)?);
-        if let Err(e) = fund_state_loader {
-            return Err(e);
-        }
-        self.fund_state = fund_state_loader.unwrap();
+        let clock: Clock = bincode::deserialize(try_get_account_data(account_map, &clock::ID)?)?;
 
-        for i in 0..MAX_TOKENS_IN_ASSET_POOL {
-            if self.token_list.list[i].oracle_account != Pubkey::default() {
-                let oracle_loader = OraclePrice::load(
-                    try_get_account_data(account_map, &self.token_list.list[i].oracle_account)?,
-                    self.token_list.list[i],
-                );
-                if let Err(e) = oracle_loader {
-                    return Err(e);
-                }
-                self.token_list.list[i].oracle_price = oracle_loader.unwrap();
-            }
+        let fund_state = FundState::load(try_get_account_data(account_map, &self.key)?)?;
+        for i in 0..self.fund_state.num_of_tokens as usize {
+            let mut token_item = token_list.list[i];
+            let oracle_account = &token_item.oracle_account;
+            let oracle_price = OraclePrice::load(
+                try_get_account_data(account_map, oracle_account)?,
+                token_item,
+                clock.clone(),
+            )?;
+            token_item.oracle_price = oracle_price;
         }
+
+        self.token_list = Some(token_list);
+        self.clock = Some(clock);
+        // might need to set fund_state to None to avoid stale data
+        self.fund_state = fund_state;
 
         Ok(())
     }
 
     fn quote(&self, quote_params: &QuoteParams) -> Result<Quote> {
         let fund_state = self.fund_state;
-        let token_list = self.token_list;
+        let token_list = self
+            .token_list
+            .ok_or_else(|| anyhow!("token_list is empty"))?;
+
         let curve_data = self.curve_data;
 
         let from_amount: u64 = quote_params.in_amount;
@@ -576,13 +578,14 @@ impl Amm for SymmetryTokenSwap {
             jupiter_program_id,
         } = swap_params;
 
-        let from_token_id_option = self
+        let token_list = self
             .token_list
+            .ok_or_else(|| anyhow!("token list is empty"))?;
+        let from_token_id_option = token_list
             .list
             .iter()
             .position(|&x| x.token_mint == *source_mint);
-        let to_token_id_option = self
-            .token_list
+        let to_token_id_option = token_list
             .list
             .iter()
             .position(|&x| x.token_mint == *destination_mint);
@@ -630,12 +633,12 @@ impl Amm for SymmetryTokenSwap {
         account_metas.push(AccountMeta::new(self.key, false));
         account_metas.push(AccountMeta::new_readonly(PDA_ADDRESS, false));
         account_metas.push(AccountMeta::new(
-            self.token_list.list[from_token_id as usize].pda_token_account,
+            token_list.list[from_token_id as usize].pda_token_account,
             false,
         ));
         account_metas.push(AccountMeta::new(*source_token_account, false));
         account_metas.push(AccountMeta::new(
-            self.token_list.list[to_token_id as usize].pda_token_account,
+            token_list.list[to_token_id as usize].pda_token_account,
             false,
         ));
         account_metas.push(AccountMeta::new(*destination_token_account, false));
@@ -649,7 +652,7 @@ impl Amm for SymmetryTokenSwap {
         // Pyth Oracle accounts are being passed as remaining accounts
         for i in 0..self.fund_state.num_of_tokens as usize {
             account_metas.push(AccountMeta::new_readonly(
-                self.token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
+                token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
                 false,
             ));
         }
