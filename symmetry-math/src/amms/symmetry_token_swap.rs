@@ -71,7 +71,7 @@ impl SymmetryMath {
         let mut amount_left: u64 = amount;
         let mut current_price = price.sell_price;
 
-        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA {
+        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA + 1 {
             let step_amount = if step < NUM_OF_POINTS_IN_CURVE_DATA {
                 curve_data.amount[step]
             } else {
@@ -152,7 +152,7 @@ impl SymmetryMath {
         let mut value_left: u64 = value;
         let mut current_price = price.buy_price;
 
-        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA {
+        for step in 0..NUM_OF_POINTS_IN_CURVE_DATA + 1 {
             let step_amount = if step < NUM_OF_POINTS_IN_CURVE_DATA {
                 curve_data.amount[step]
             } else {
@@ -312,21 +312,23 @@ impl Amm for SymmetryTokenSwap {
 
     fn update(&mut self, account_map: &AccountMap) -> Result<()> {
         self.token_list = None;
-        let token_list = TokenList::load(try_get_account_data(account_map, &TOKEN_LIST_ADDRESS)?)?;
+        let mut token_list =
+            TokenList::load(try_get_account_data(account_map, &TOKEN_LIST_ADDRESS)?)?;
         self.curve_data = CurveData::load(try_get_account_data(account_map, &CURVE_DATA_ADDRESS)?)?;
 
         let clock: Clock = bincode::deserialize(try_get_account_data(account_map, &clock::ID)?)?;
 
         let fund_state = FundState::load(try_get_account_data(account_map, &self.key)?)?;
         for i in 0..self.fund_state.num_of_tokens as usize {
-            let mut token_item = token_list.list[i];
+            let token_item = token_list.list[self.fund_state.current_comp_token[i] as usize];
             let oracle_account = &token_item.oracle_account;
             let oracle_price = OraclePrice::load(
                 try_get_account_data(account_map, oracle_account)?,
                 token_item,
                 clock.clone(),
             )?;
-            token_item.oracle_price = oracle_price;
+            token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_price =
+                oracle_price;
         }
 
         self.token_list = Some(token_list);
