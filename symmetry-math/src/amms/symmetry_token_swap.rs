@@ -26,6 +26,7 @@ struct SymmetryTokenSwap {
     label: String,
     fund_state: FundState,
     token_list: Option<TokenList>,
+    fund_worth: Option<u64>,
     curve_data: CurveData,
     program_id: Pubkey,
     clock: Option<Clock>,
@@ -319,18 +320,31 @@ impl Amm for SymmetryTokenSwap {
         let clock: Clock = bincode::deserialize(try_get_account_data(account_map, &clock::ID)?)?;
 
         let fund_state = FundState::load(try_get_account_data(account_map, &self.key)?)?;
+        self.fund_worth = None;
+
+        let mut fund_worth = 0;
         for i in 0..self.fund_state.num_of_tokens as usize {
-            let token_item = token_list.list[self.fund_state.current_comp_token[i] as usize];
-            let oracle_account = &token_item.oracle_account;
+            let token_settings = token_list.list[fund_state.current_comp_token[i] as usize];
+            let oracle_account = &token_settings.oracle_account;
             let oracle_price = OraclePrice::load(
                 try_get_account_data(account_map, oracle_account)?,
-                token_item,
+                token_settings,
                 clock.clone(),
             )?;
-            token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_price =
-                oracle_price;
+            token_list.list[fund_state.current_comp_token[i] as usize].oracle_price = oracle_price;
+
+            if oracle_price.oracle_live == 0 {
+                return Err(Error::msg("One of the tokens has offline oracle status"));
+            }
+
+            fund_worth += SymmetryMath::amount_to_usd_value(
+                fund_state.current_comp_amount[i],
+                token_settings.decimals,
+                oracle_price.avg_price,
+            )?;
         }
 
+        self.fund_worth = Some(fund_worth);
         self.token_list = Some(token_list);
         self.clock = Some(clock);
         // might need to set fund_state to None to avoid stale data
@@ -373,24 +387,13 @@ impl Amm for SymmetryTokenSwap {
             .position(|&x| x == (to_token_id as u64))
             .context("fail to find to token index")?;
 
-        let mut fund_worth = 0;
-        for i in 0..(fund_state.num_of_tokens as usize) {
-            let token = fund_state.current_comp_token[i] as usize;
-            let token_settings = token_list.list[token];
-            let token_price = token_settings.oracle_price;
-            if token_price.oracle_live == 0 {
-                return Err(Error::msg("One of the tokens has offline oracle status"));
-            }
-            fund_worth += SymmetryMath::amount_to_usd_value(
-                fund_state.current_comp_amount[i],
-                token_settings.decimals,
-                token_price.avg_price,
-            )?;
-        }
-
+        let mut fund_worth = self
+            .fund_worth
+            .ok_or_else(|| anyhow!("fund_worth is empty"))?;
         let from_token_price = from_token_settings.oracle_price;
         let to_token_price = to_token_settings.oracle_price;
-
+        println!("from_token_price: {:?}", from_token_price.avg_price);
+        println!("to_token_price: {:?}", to_token_price.avg_price);
         let from_token_target_amount: u64 = SymmetryMath::usd_value_to_amount(
             SymmetryMath::mul_div(
                 fund_state.target_weight[from_token_index],
