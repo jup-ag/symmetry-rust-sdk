@@ -11,7 +11,7 @@ use jupiter_amm_interface::{
 };
 
 use crate::amms::accounts::{FundState, CurveData, TokenList, OraclePrice, TokenPriceData, TokenSettings};
-use crate::amms::accounts::{MAX_TOKENS_IN_ASSET_POOL, NUM_OF_POINTS_IN_CURVE_DATA, USE_CURVE_DATA, BPS_DIVIDER, LP_DISABLED, WEIGHT_MULTIPLIER};
+use crate::amms::accounts::{MAX_TOKENS_IN_ASSET_POOL, NUM_OF_POINTS_IN_CURVE_DATA, USE_CURVE_DATA, BPS_DIVIDER, LP_DISABLED, WEIGHT_MULTIPLIER, FUND_LP_DISABLED};
 
 pub struct SymmetryTokenSwap {
     key: Pubkey,
@@ -70,7 +70,8 @@ impl SymmetryTokenSwap {
                 target_weight: self.fund_state.target_weight,
                 weight_sum: self.fund_state.weight_sum,
                 rebalance_threshold: self.fund_state.rebalance_threshold,
-                lp_offset_threshold: self.fund_state.lp_offset_threshold
+                lp_offset_threshold: self.fund_state.lp_offset_threshold,
+                lp_disabled: self.fund_state.lp_disabled,
             },
             token_list: TokenList {
                 num_tokens: self.token_list.num_tokens,
@@ -296,7 +297,10 @@ impl Amm for SymmetryTokenSwap {
         let fund_state = self.fund_state;
         let token_list = self.token_list;
         let curve_data = self.curve_data;
-
+        
+        if fund_state.lp_disabled == FUND_LP_DISABLED {
+            return Err(Error::msg("Manager has disabled liquidity provision on this fund"))
+        }
         let from_amount: u64 = quote_params.in_amount;
         let from_token_id_option = token_list.list.iter().position(|&x| x.token_mint == quote_params.input_mint);
         let to_token_id_option = token_list.list.iter().position(|&x| x.token_mint == quote_params.output_mint);
@@ -618,7 +622,7 @@ fn test_symetry_token_swap() {
 
     /* Init Token Swap */
     const TOKEN_LIST_ACCOUNT: Pubkey = SymmetryTokenSwap::TOKEN_LIST_ADDRESS;
-    const FUND_STATE_ACCOUNT: Pubkey = pubkey!("2VHtUhF8KrjN4xx1fEsTB7Fcnw78DNHKwcjQF5ikFzqZ");
+    const FUND_STATE_ACCOUNT: Pubkey = pubkey!("Db86JGJnM58KtcZjqf8JFn3md98TDWJZLJJFBzkEWccZ");
 
     let test_harness = AmmTestHarness::new();
     let fund_state_account = test_harness.get_keyed_account(FUND_STATE_ACCOUNT).unwrap();

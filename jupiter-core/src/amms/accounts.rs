@@ -14,6 +14,7 @@ pub const ONE_USD: u64 = 1_000_000_000_000;
 pub const USE_CURVE_DATA: u8 = 1;
 pub const BPS_DIVIDER: u64 = 10000;
 pub const WEIGHT_MULTIPLIER: u64 = 10000;
+pub const FUND_LP_DISABLED: u64 = 1;
 pub const LP_DISABLED: u8 = 0;
 
 pub fn mul_div(a: u64, b: u64, c: u64) -> u64 {
@@ -35,6 +36,7 @@ pub struct FundState {
     pub weight_sum: u64,
     pub rebalance_threshold: u64,
     pub lp_offset_threshold: u64,
+    pub lp_disabled: u64,
 }
 
 impl FundState {
@@ -55,6 +57,7 @@ impl FundState {
         let weight_sum = u64::from_le_bytes(account_data[816..824].try_into().unwrap_or_default());
         let rebalance_threshold = u64::from_le_bytes(account_data[1024..1032].try_into().unwrap_or_default());
         let lp_offset_threshold = u64::from_le_bytes(account_data[1040..1048].try_into().unwrap_or_default());
+        let lp_disabled = u64::from_le_bytes(account_data[9432..9440].try_into().unwrap_or_default());
         Ok(FundState {
             manager: Pubkey::new_from_array(account_data[16..48].try_into().unwrap_or_default()),
             host_pubkey: Pubkey::new_from_array(account_data[128..160].try_into().unwrap_or_default()),
@@ -65,6 +68,7 @@ impl FundState {
             weight_sum,
             rebalance_threshold,
             lp_offset_threshold,
+            lp_disabled,
         })
     }
 }
