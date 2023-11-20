@@ -124,7 +124,7 @@ impl SymmetryTokenSwap {
             }
             if step == NUM_OF_POINTS_IN_CURVE_DATA { curve_offset = 0; }
             if step_amount <= curve_offset {
-                curve_offset -= curve_data.amount[step];
+                curve_offset -= step_amount;
                 continue;
             }
             let mut amount_in_interval = step_amount - curve_offset;
@@ -181,7 +181,7 @@ impl SymmetryTokenSwap {
             }
             if step == NUM_OF_POINTS_IN_CURVE_DATA { curve_offset = 0; }
             if step_amount <= curve_offset {
-                curve_offset -= curve_data.amount[step];
+                curve_offset -= step_amount;
                 continue;
             }
             let mut amount_in_interval = step_amount - curve_offset;
