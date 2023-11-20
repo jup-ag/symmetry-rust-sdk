@@ -87,7 +87,7 @@ impl SymmetryMath {
                 curve_offset = 0;
             }
             if step_amount <= curve_offset {
-                curve_offset -= curve_data.amount[step];
+                curve_offset -= step_amount;
                 continue;
             }
             let mut amount_in_interval = step_amount - curve_offset;
@@ -172,7 +172,7 @@ impl SymmetryMath {
                 curve_offset = 0;
             }
             if step_amount <= curve_offset {
-                curve_offset -= curve_data.amount[step];
+                curve_offset -= step_amount;
                 continue;
             }
             let mut amount_in_interval = step_amount - curve_offset;
