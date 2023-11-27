@@ -279,17 +279,32 @@ impl OraclePrice {
                 let write_timestamp: u64 = u64::from_le_bytes(t);
                 let mut oracle_live: u8 = 1;
                 
-                if Clock::get().unwrap_or_default().unix_timestamp as u64 > write_timestamp + 15 {
+                let current_time = Clock::get().unwrap_or_default().unix_timestamp as u64;
+                if current_time > write_timestamp + 100 {
                     oracle_live = 0;
                 }
+            
+                let time_based_confidence_bps =
+                    if current_time > write_timestamp + 30
+                        { 9900 } else
+                    if current_time > write_timestamp + 10
+                        { token_settings.oracle_confidence_pct as u64 + (current_time - write_timestamp - 10) * 2 } else
+                        { token_settings.oracle_confidence_pct as u64 };
+            
+
+                let avg_price = mul_div(
+                    mantissa,
+                    10000 - token_settings.oracle_confidence_pct as u64,
+                    10000
+                );
 
                 let base_confidence = mul_div(
-                    mantissa,
-                    token_settings.oracle_confidence_pct as u64,
+                    avg_price,
+                    time_based_confidence_bps,
                     10000
                 );
                 
-                (mantissa - base_confidence, base_confidence, oracle_live)
+                (avg_price, base_confidence, oracle_live)
             }
             _ => (0, 0, 0)
         };
