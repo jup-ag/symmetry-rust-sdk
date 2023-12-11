@@ -343,7 +343,7 @@ impl OraclePrice {
                 let mut oracle_live: u8 = 1;
 
                 let current_time = Clock::get().unwrap_or_default().unix_timestamp as u64;
-                if current_time > write_timestamp + 100 {
+                if current_time > write_timestamp + 40 {
                     oracle_live = 0;
                 }
 
