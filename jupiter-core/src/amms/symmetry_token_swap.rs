@@ -622,7 +622,7 @@ fn test_symetry_token_swap() {
 
     /* Init Token Swap */
     const TOKEN_LIST_ACCOUNT: Pubkey = SymmetryTokenSwap::TOKEN_LIST_ADDRESS;
-    const FUND_STATE_ACCOUNT: Pubkey = pubkey!("Db86JGJnM58KtcZjqf8JFn3md98TDWJZLJJFBzkEWccZ");
+    const FUND_STATE_ACCOUNT: Pubkey = pubkey!("4RofqKG4d6jfUD2HjtWb2F9UkLJvJ7P3kFmyuhX7H88d");
 
     let test_harness = AmmTestHarness::new();
     let fund_state_account = test_harness.get_keyed_account(FUND_STATE_ACCOUNT).unwrap();
@@ -639,12 +639,12 @@ fn test_symetry_token_swap() {
     println!("-------------------");
     let token_mints = token_swap.get_reserve_mints();
     println!("Available mints for swap: {:?}", token_mints);
-    let from_token_mint: Pubkey = token_mints.clone().into_iter().find(|&x| x == WSOL_TOKEN_MINT).unwrap();
-    let to_token_mint: Pubkey = token_mints.clone().into_iter().find(|&x| x == MSOL_TOKEN_MINT).unwrap(); 
+    let from_token_mint: Pubkey = token_mints.clone().into_iter().find(|&x| x == MSOL_TOKEN_MINT).unwrap();
+    let to_token_mint: Pubkey = token_mints.clone().into_iter().find(|&x| x == USDC_TOKEN_MINT).unwrap(); 
 
     /* Get Quote */
     println!("-------------------");
-    let in_amount: u64 = 100_000_000; // 0.1 WSOL -> ? MSOL
+    let in_amount: u64 = 10_000_000_000; // 10 MSOL -> ? USDC
     let quote = token_swap
         .quote(&QuoteParams {
             input_mint: from_token_mint,

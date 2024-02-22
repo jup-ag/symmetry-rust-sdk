@@ -241,7 +241,7 @@ impl OraclePrice {
                 let status: u32 = u32::from_le_bytes(account_data[224..228].try_into().unwrap_or_default());
                 let mut oracle_live = 1;
         
-                if Clock::get().unwrap_or_default().slot >= 50 + valid_slot {
+                if Clock::get().unwrap_or_default().slot >= 25 + valid_slot {
                     oracle_live = 0;
                 }
                 if status != 1 {
@@ -277,7 +277,7 @@ impl OraclePrice {
                 let timetamp_end = price_end + 400;
                 let t: [u8; 8] = account_data[timestamp_start..timetamp_end].try_into().unwrap_or_default();
                 let write_timestamp: u64 = u64::from_le_bytes(t);
-                let mut oracle_live: u8 = 1;
+                let mut oracle_live: u8 = 0; // Disable lp for vaults containing switchboard tokens
                 
                 let current_time = Clock::get().unwrap_or_default().unix_timestamp as u64;
                 if current_time > write_timestamp + 40 {
