@@ -1,7 +1,7 @@
+pub mod accounts;
 mod amm;
 mod spl_token_swap_amm;
-mod symmetry_token_swap;
-mod accounts;
+pub mod symmetry_token_swap;
 
 #[cfg(test)]
 mod test_harness;

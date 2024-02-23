@@ -1,16 +1,14 @@
 [workspace]
-members = [
-    "jupiter-core",
-]
+members = ["symmetry-math"]
 
 [workspace.package]
 edition = "2021"
 
 [workspace.dependencies]
-anchor-lang = "0.26"
-anchor-syn = "0.26"
-solana-sdk = "~1.14"
-solana-client = "~1.14"
-solana-program-test = "~1.14"
+anchor-lang = "0.28"
+anchor-syn = "0.28"
+solana-sdk = "~1.16"
+solana-client = "~1.16"
+solana-program-test = "~1.16"
 
 anchor-gen = "0.3"
