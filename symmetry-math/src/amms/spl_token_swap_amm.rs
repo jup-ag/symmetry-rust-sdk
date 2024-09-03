@@ -9,11 +9,11 @@ use solana_sdk::{program_pack::Pack, pubkey, pubkey::Pubkey};
 use spl_token_swap::curve::base::SwapCurve;
 use spl_token_swap::{curve::calculator::TradeDirection, state::SwapV1};
 
-use jupiter_amm_interface::Swap;
 use jupiter_amm_interface::{
     try_get_account_data, AccountMap, Amm, KeyedAccount, Quote, QuoteParams, SwapAndAccountMetas,
     SwapParams,
 };
+use jupiter_amm_interface::{AmmContext, Swap};
 
 use super::amm::TokenSwap;
 
@@ -92,7 +92,7 @@ impl Clone for SplTokenSwapAmm {
 }
 
 impl Amm for SplTokenSwapAmm {
-    fn from_keyed_account(keyed_account: &KeyedAccount) -> Result<Self> {
+    fn from_keyed_account(keyed_account: &KeyedAccount, _amm_context: &AmmContext) -> Result<Self> {
         // Skip the first byte which is version
         let state = SwapV1::unpack(&keyed_account.account.data[1..])?;
         let reserve_mints = [state.token_a_mint, state.token_b_mint];
@@ -157,7 +157,7 @@ impl Amm for SplTokenSwapAmm {
 
         let swap_result = get_swap_curve_result(
             &self.state.swap_curve,
-            quote_params.in_amount,
+            quote_params.amount,
             swap_source_amount,
             swap_destination_amount,
             trade_direction,
@@ -167,7 +167,6 @@ impl Amm for SplTokenSwapAmm {
         Ok(Quote {
             fee_pct: swap_result.fee_pct,
             in_amount: swap_result.input_amount.try_into()?,
-            not_enough_liquidity: swap_result.not_enough_liquidity,
             out_amount: swap_result.expected_output_amount.try_into()?,
             fee_amount: swap_result.fees.try_into()?,
             fee_mint: quote_params.input_mint,

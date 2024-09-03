@@ -6,11 +6,11 @@ use rust_decimal::Decimal;
 use solana_sdk::sysvar::clock::{self, Clock};
 use solana_sdk::{instruction::Instruction, pubkey, pubkey::Pubkey};
 
-use jupiter_amm_interface::Swap;
 use jupiter_amm_interface::{
     try_get_account_data, AccountMap, Amm, KeyedAccount, Quote, QuoteParams, SwapAndAccountMetas,
     SwapParams,
 };
+use jupiter_amm_interface::{AmmContext, Swap};
 
 use super::accounts::mul_div;
 use crate::amms::accounts::{
@@ -240,7 +240,7 @@ impl SymmetryMath {
 }
 
 impl Amm for SymmetryTokenSwap {
-    fn from_keyed_account(keyed_account: &KeyedAccount) -> Result<Self> {
+    fn from_keyed_account(keyed_account: &KeyedAccount, amm_context: &AmmContext) -> Result<Self> {
         // pub fn from_keyed_account(
         //     fund_state_account: &KeyedAccount,
         //     token_list_account: &KeyedAccount,
@@ -361,7 +361,7 @@ impl Amm for SymmetryTokenSwap {
 
         let curve_data = self.curve_data;
 
-        let from_amount: u64 = quote_params.in_amount;
+        let from_amount: u64 = quote_params.amount;
         let from_token_id = token_list
             .list
             .iter()
@@ -561,7 +561,7 @@ impl Amm for SymmetryTokenSwap {
         }
 
         Ok(Quote {
-            in_amount: quote_params.in_amount,
+            in_amount: quote_params.amount,
             out_amount: to_amount,
             fee_amount: total_fees,
             fee_mint: quote_params.output_mint,
@@ -581,6 +581,7 @@ impl Amm for SymmetryTokenSwap {
             open_order_address,
             quote_mint_to_referrer,
             jupiter_program_id,
+            ..
         } = swap_params;
 
         let token_list = self
