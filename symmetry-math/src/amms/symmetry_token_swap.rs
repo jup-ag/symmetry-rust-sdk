@@ -21,16 +21,16 @@ use crate::amms::accounts::{
     USE_CURVE_DATA, WEIGHT_MULTIPLIER,
 };
 
-struct SymmetryTokenSwap {
-    key: Pubkey,
-    label: String,
-    fund_state: FundState,
-    token_list: Option<TokenList>,
-    fund_worth: Option<u64>,
-    curve_data: CurveData,
-    program_id: Pubkey,
-    clock: Option<Clock>,
-}
+// struct SymmetryTokenSwap {
+//     key: Pubkey,
+//     label: String,
+//     fund_state: FundState,
+//     token_list: Option<TokenList>,
+//     fund_worth: Option<u64>,
+//     curve_data: CurveData,
+//     program_id: Pubkey,
+//     clock: Option<Clock>,
+// }
 
 pub const SYMMETRY_PROGRAM_ADDRESS: Pubkey =
     pubkey!("2KehYt3KsEQR53jYcxjbQp2d2kCp4AkuQW68atufRwSr");
@@ -239,455 +239,455 @@ impl SymmetryMath {
     }
 }
 
-impl Amm for SymmetryTokenSwap {
-    fn from_keyed_account(keyed_account: &KeyedAccount, amm_context: &AmmContext) -> Result<Self> {
-        // pub fn from_keyed_account(
-        //     fund_state_account: &KeyedAccount,
-        //     token_list_account: &KeyedAccount,
-        // ) -> Result<Self> {
-        //     let fund_state_loader = FundState::load(&fund_state_account.account.data);
-        //     if let Err(e) = fund_state_loader {
-        //         return Err(e);
-        //     }
-        //     let fund_state = fund_state_loader.unwrap();
-        //     let token_list_loader = TokenList::load(&token_list_account.account.data);
-        //     if let Err(e) = token_list_loader {
-        //         return Err(e);
-        //     }
-        //     let token_list = token_list_loader.unwrap();
+// impl Amm for SymmetryTokenSwap {
+//     fn from_keyed_account(keyed_account: &KeyedAccount, amm_context: &AmmContext) -> Result<Self> {
+//         // pub fn from_keyed_account(
+//         //     fund_state_account: &KeyedAccount,
+//         //     token_list_account: &KeyedAccount,
+//         // ) -> Result<Self> {
+//         //     let fund_state_loader = FundState::load(&fund_state_account.account.data);
+//         //     if let Err(e) = fund_state_loader {
+//         //         return Err(e);
+//         //     }
+//         //     let fund_state = fund_state_loader.unwrap();
+//         //     let token_list_loader = TokenList::load(&token_list_account.account.data);
+//         //     if let Err(e) = token_list_loader {
+//         //         return Err(e);
+//         //     }
+//         //     let token_list = token_list_loader.unwrap();
 
-        //     Ok(Self {
-        //         key: fund_state_account.key,
-        //         label: String::from("Symmetry"),
-        //         fund_state: fund_state,
-        //         token_list: token_list,
-        //         curve_data: CurveData::empty(),
-        //         program_id: SymmetryTokenSwap::SYMMETRY_PROGRAM_ADDRESS,
-        //     })
-        // }
-        todo!("ignore")
-    }
+//         //     Ok(Self {
+//         //         key: fund_state_account.key,
+//         //         label: String::from("Symmetry"),
+//         //         fund_state: fund_state,
+//         //         token_list: token_list,
+//         //         curve_data: CurveData::empty(),
+//         //         program_id: SymmetryTokenSwap::SYMMETRY_PROGRAM_ADDRESS,
+//         //     })
+//         // }
+//         todo!("ignore")
+//     }
 
-    fn label(&self) -> String {
-        self.label.clone()
-    }
+//     fn label(&self) -> String {
+//         self.label.clone()
+//     }
 
-    fn program_id(&self) -> Pubkey {
-        self.program_id
-    }
+//     fn program_id(&self) -> Pubkey {
+//         self.program_id
+//     }
 
-    fn key(&self) -> Pubkey {
-        self.key
-    }
+//     fn key(&self) -> Pubkey {
+//         self.key
+//     }
 
-    fn get_reserve_mints(&self) -> Vec<Pubkey> {
-        let mut vec: Vec<Pubkey> = Vec::new();
-        for i in 0..self.fund_state.num_of_tokens as usize {
-            if let Some(token_list) = self.token_list {
-                if token_list.list[self.fund_state.current_comp_token[i] as usize].lp_on
-                    != LP_DISABLED
-                {
-                    vec.push(
-                        token_list.list[self.fund_state.current_comp_token[i] as usize].token_mint,
-                    )
-                }
-            }
-        }
-        return vec;
-    }
+//     fn get_reserve_mints(&self) -> Vec<Pubkey> {
+//         let mut vec: Vec<Pubkey> = Vec::new();
+//         for i in 0..self.fund_state.num_of_tokens as usize {
+//             if let Some(token_list) = self.token_list {
+//                 if token_list.list[self.fund_state.current_comp_token[i] as usize].lp_on
+//                     != LP_DISABLED
+//                 {
+//                     vec.push(
+//                         token_list.list[self.fund_state.current_comp_token[i] as usize].token_mint,
+//                     )
+//                 }
+//             }
+//         }
+//         return vec;
+//     }
 
-    fn get_accounts_to_update(&self) -> Vec<Pubkey> {
-        let mut accounts_to_update = Vec::with_capacity(4 + self.fund_state.num_of_tokens as usize);
-        accounts_to_update.extend([self.key, TOKEN_LIST_ADDRESS, CURVE_DATA_ADDRESS, clock::ID]);
+//     fn get_accounts_to_update(&self) -> Vec<Pubkey> {
+//         let mut accounts_to_update = Vec::with_capacity(4 + self.fund_state.num_of_tokens as usize);
+//         accounts_to_update.extend([self.key, TOKEN_LIST_ADDRESS, CURVE_DATA_ADDRESS, clock::ID]);
 
-        if let Some(token_list) = self.token_list {
-            for i in 0..self.fund_state.num_of_tokens as usize {
-                accounts_to_update.push(
-                    token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
-                );
-            }
-        }
+//         if let Some(token_list) = self.token_list {
+//             for i in 0..self.fund_state.num_of_tokens as usize {
+//                 accounts_to_update.push(
+//                     token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
+//                 );
+//             }
+//         }
 
-        accounts_to_update
-    }
+//         accounts_to_update
+//     }
 
-    fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-        self.token_list = None;
-        let mut token_list =
-            TokenList::load(try_get_account_data(account_map, &TOKEN_LIST_ADDRESS)?)?;
-        self.curve_data = CurveData::load(try_get_account_data(account_map, &CURVE_DATA_ADDRESS)?)?;
+//     fn update(&mut self, account_map: &AccountMap) -> Result<()> {
+//         self.token_list = None;
+//         let mut token_list =
+//             TokenList::load(try_get_account_data(account_map, &TOKEN_LIST_ADDRESS)?)?;
+//         self.curve_data = CurveData::load(try_get_account_data(account_map, &CURVE_DATA_ADDRESS)?)?;
 
-        let clock: Clock = bincode::deserialize(try_get_account_data(account_map, &clock::ID)?)?;
+//         let clock: Clock = bincode::deserialize(try_get_account_data(account_map, &clock::ID)?)?;
 
-        let fund_state = FundState::load(try_get_account_data(account_map, &self.key)?)?;
-        self.fund_worth = None;
+//         let fund_state = FundState::load(try_get_account_data(account_map, &self.key)?)?;
+//         self.fund_worth = None;
 
-        let mut fund_worth = 0;
-        for i in 0..self.fund_state.num_of_tokens as usize {
-            let token_settings = token_list.list[fund_state.current_comp_token[i] as usize];
-            let oracle_account = &token_settings.oracle_account;
-            let oracle_price = OraclePrice::load(
-                try_get_account_data(account_map, oracle_account)?,
-                token_settings,
-                clock.clone(),
-            )?;
-            token_list.list[fund_state.current_comp_token[i] as usize].oracle_price = oracle_price;
+//         let mut fund_worth = 0;
+//         for i in 0..self.fund_state.num_of_tokens as usize {
+//             let token_settings = token_list.list[fund_state.current_comp_token[i] as usize];
+//             let oracle_account = &token_settings.oracle_account;
+//             let oracle_price = OraclePrice::load(
+//                 try_get_account_data(account_map, oracle_account)?,
+//                 token_settings,
+//                 clock.clone(),
+//             )?;
+//             token_list.list[fund_state.current_comp_token[i] as usize].oracle_price = oracle_price;
 
-            if oracle_price.oracle_live == 0 {
-                return Err(Error::msg("One of the tokens has offline oracle status"));
-            }
+//             if oracle_price.oracle_live == 0 {
+//                 return Err(Error::msg("One of the tokens has offline oracle status"));
+//             }
 
-            fund_worth += SymmetryMath::amount_to_usd_value(
-                fund_state.current_comp_amount[i],
-                token_settings.decimals,
-                oracle_price.avg_price,
-            )?;
-        }
+//             fund_worth += SymmetryMath::amount_to_usd_value(
+//                 fund_state.current_comp_amount[i],
+//                 token_settings.decimals,
+//                 oracle_price.avg_price,
+//             )?;
+//         }
 
-        self.fund_worth = Some(fund_worth);
-        self.token_list = Some(token_list);
-        self.clock = Some(clock);
-        // might need to set fund_state to None to avoid stale data
-        self.fund_state = fund_state;
+//         self.fund_worth = Some(fund_worth);
+//         self.token_list = Some(token_list);
+//         self.clock = Some(clock);
+//         // might need to set fund_state to None to avoid stale data
+//         self.fund_state = fund_state;
 
-        Ok(())
-    }
+//         Ok(())
+//     }
 
-    fn quote(&self, quote_params: &QuoteParams) -> Result<Quote> {
-        let fund_state = self.fund_state;
-        let token_list = self
-            .token_list
-            .ok_or_else(|| anyhow!("token_list is empty"))?;
+//     fn quote(&self, quote_params: &QuoteParams) -> Result<Quote> {
+//         let fund_state = self.fund_state;
+//         let token_list = self
+//             .token_list
+//             .ok_or_else(|| anyhow!("token_list is empty"))?;
 
-        let curve_data = self.curve_data;
+//         let curve_data = self.curve_data;
 
-        let from_amount: u64 = quote_params.amount;
-        let from_token_id = token_list
-            .list
-            .iter()
-            .position(|&x| x.token_mint == quote_params.input_mint)
-            .context("fail to find from token id")?;
-        let to_token_id = token_list
-            .list
-            .iter()
-            .position(|&x| x.token_mint == quote_params.output_mint)
-            .context("fail to find to token id")?;
+//         let from_amount: u64 = quote_params.amount;
+//         let from_token_id = token_list
+//             .list
+//             .iter()
+//             .position(|&x| x.token_mint == quote_params.input_mint)
+//             .context("fail to find from token id")?;
+//         let to_token_id = token_list
+//             .list
+//             .iter()
+//             .position(|&x| x.token_mint == quote_params.output_mint)
+//             .context("fail to find to token id")?;
 
-        let from_token_settings = token_list.list[from_token_id as usize];
-        let to_token_settings = token_list.list[to_token_id as usize];
+//         let from_token_settings = token_list.list[from_token_id as usize];
+//         let to_token_settings = token_list.list[to_token_id as usize];
 
-        let from_token_index = fund_state
-            .current_comp_token
-            .iter()
-            .position(|&x| x == (from_token_id as u64))
-            .context("fail to find from token index")?;
-        let to_token_index = fund_state
-            .current_comp_token
-            .iter()
-            .position(|&x| x == (to_token_id as u64))
-            .context("fail to find to token index")?;
+//         let from_token_index = fund_state
+//             .current_comp_token
+//             .iter()
+//             .position(|&x| x == (from_token_id as u64))
+//             .context("fail to find from token index")?;
+//         let to_token_index = fund_state
+//             .current_comp_token
+//             .iter()
+//             .position(|&x| x == (to_token_id as u64))
+//             .context("fail to find to token index")?;
 
-        let mut fund_worth = self
-            .fund_worth
-            .ok_or_else(|| anyhow!("fund_worth is empty"))?;
-        let from_token_price = from_token_settings.oracle_price;
-        let to_token_price = to_token_settings.oracle_price;
-        println!("from_token_price: {:?}", from_token_price.avg_price);
-        println!("to_token_price: {:?}", to_token_price.avg_price);
-        let from_token_target_amount: u64 = SymmetryMath::usd_value_to_amount(
-            SymmetryMath::mul_div(
-                fund_state.target_weight[from_token_index],
-                fund_worth,
-                fund_state.weight_sum,
-            )
-            .context("mul div err")?,
-            from_token_settings.decimals,
-            from_token_price.avg_price,
-        )?;
-        let to_token_target_amount: u64 = SymmetryMath::usd_value_to_amount(
-            SymmetryMath::mul_div(
-                fund_state.target_weight[to_token_index],
-                fund_worth,
-                fund_state.weight_sum,
-            )
-            .context("mul div err")?,
-            to_token_settings.decimals,
-            to_token_price.avg_price,
-        )?;
+//         let mut fund_worth = self
+//             .fund_worth
+//             .ok_or_else(|| anyhow!("fund_worth is empty"))?;
+//         let from_token_price = from_token_settings.oracle_price;
+//         let to_token_price = to_token_settings.oracle_price;
+//         println!("from_token_price: {:?}", from_token_price.avg_price);
+//         println!("to_token_price: {:?}", to_token_price.avg_price);
+//         let from_token_target_amount: u64 = SymmetryMath::usd_value_to_amount(
+//             SymmetryMath::mul_div(
+//                 fund_state.target_weight[from_token_index],
+//                 fund_worth,
+//                 fund_state.weight_sum,
+//             )
+//             .context("mul div err")?,
+//             from_token_settings.decimals,
+//             from_token_price.avg_price,
+//         )?;
+//         let to_token_target_amount: u64 = SymmetryMath::usd_value_to_amount(
+//             SymmetryMath::mul_div(
+//                 fund_state.target_weight[to_token_index],
+//                 fund_worth,
+//                 fund_state.weight_sum,
+//             )
+//             .context("mul div err")?,
+//             to_token_settings.decimals,
+//             to_token_price.avg_price,
+//         )?;
 
-        let value = SymmetryMath::compute_value_of_sold_token(
-            from_amount,
-            from_token_settings,
-            from_token_price,
-            fund_state.current_comp_amount[from_token_index],
-            from_token_target_amount,
-            curve_data.sell[from_token_id as usize],
-        )?;
+//         let value = SymmetryMath::compute_value_of_sold_token(
+//             from_amount,
+//             from_token_settings,
+//             from_token_price,
+//             fund_state.current_comp_amount[from_token_index],
+//             from_token_target_amount,
+//             curve_data.sell[from_token_id as usize],
+//         )?;
 
-        let mut to_amount = SymmetryMath::compute_amount_of_bought_token(
-            value,
-            to_token_settings,
-            to_token_price,
-            fund_state.current_comp_amount[to_token_index],
-            to_token_target_amount,
-            curve_data.buy[to_token_id as usize],
-        )?;
+//         let mut to_amount = SymmetryMath::compute_amount_of_bought_token(
+//             value,
+//             to_token_settings,
+//             to_token_price,
+//             fund_state.current_comp_amount[to_token_index],
+//             to_token_target_amount,
+//             curve_data.buy[to_token_id as usize],
+//         )?;
 
-        let mut amount_without_fees = SymmetryMath::usd_value_to_amount(
-            SymmetryMath::amount_to_usd_value(
-                from_amount,
-                from_token_settings.decimals,
-                from_token_price.sell_price,
-            )?,
-            to_token_settings.decimals,
-            to_token_price.buy_price,
-        )?;
+//         let mut amount_without_fees = SymmetryMath::usd_value_to_amount(
+//             SymmetryMath::amount_to_usd_value(
+//                 from_amount,
+//                 from_token_settings.decimals,
+//                 from_token_price.sell_price,
+//             )?,
+//             to_token_settings.decimals,
+//             to_token_price.buy_price,
+//         )?;
 
-        let fair_amount = SymmetryMath::usd_value_to_amount(
-            SymmetryMath::amount_to_usd_value(
-                from_amount,
-                from_token_settings.decimals,
-                from_token_price.avg_price,
-            )?,
-            to_token_settings.decimals,
-            to_token_price.avg_price,
-        )?;
+//         let fair_amount = SymmetryMath::usd_value_to_amount(
+//             SymmetryMath::amount_to_usd_value(
+//                 from_amount,
+//                 from_token_settings.decimals,
+//                 from_token_price.avg_price,
+//             )?,
+//             to_token_settings.decimals,
+//             to_token_price.avg_price,
+//         )?;
 
-        if amount_without_fees > fund_state.current_comp_amount[to_token_index] {
-            amount_without_fees = fund_state.current_comp_amount[to_token_index];
-        }
+//         if amount_without_fees > fund_state.current_comp_amount[to_token_index] {
+//             amount_without_fees = fund_state.current_comp_amount[to_token_index];
+//         }
 
-        if to_amount > amount_without_fees {
-            to_amount = amount_without_fees
-        }
+//         if to_amount > amount_without_fees {
+//             to_amount = amount_without_fees
+//         }
 
-        let total_fees = amount_without_fees - to_amount;
+//         let total_fees = amount_without_fees - to_amount;
 
-        let symmetry_bps = token_list.list[0].additional_data[60];
-        let symmetry_fee =
-            SymmetryMath::mul_div(total_fees, symmetry_bps as u64, 100).context("mul div err")?;
+//         let symmetry_bps = token_list.list[0].additional_data[60];
+//         let symmetry_fee =
+//             SymmetryMath::mul_div(total_fees, symmetry_bps as u64, 100).context("mul div err")?;
 
-        let host_bps = token_list.list[0].additional_data[61];
-        let host_fee =
-            SymmetryMath::mul_div(total_fees, host_bps as u64, 100).context("mul div err")?;
+//         let host_bps = token_list.list[0].additional_data[61];
+//         let host_fee =
+//             SymmetryMath::mul_div(total_fees, host_bps as u64, 100).context("mul div err")?;
 
-        let manager_bps = token_list.list[0].additional_data[62];
-        let manager_fee =
-            SymmetryMath::mul_div(total_fees, manager_bps as u64, 100).context("mul div err")?;
+//         let manager_bps = token_list.list[0].additional_data[62];
+//         let manager_fee =
+//             SymmetryMath::mul_div(total_fees, manager_bps as u64, 100).context("mul div err")?;
 
-        let fund_fee = total_fees - symmetry_fee - host_fee - manager_fee;
+//         let fund_fee = total_fees - symmetry_fee - host_fee - manager_fee;
 
-        let fee_bps = SymmetryMath::mul_div(
-            amount_without_fees - to_amount,
-            BPS_DIVIDER * 100,
-            fair_amount,
-        )
-        .context("mul div err")?;
+//         let fee_bps = SymmetryMath::mul_div(
+//             amount_without_fees - to_amount,
+//             BPS_DIVIDER * 100,
+//             fair_amount,
+//         )
+//         .context("mul div err")?;
 
-        let from_token_worth_before_swap = SymmetryMath::amount_to_usd_value(
-            fund_state.current_comp_amount[from_token_index],
-            from_token_settings.decimals,
-            from_token_price.avg_price,
-        )
-        .context("mul div err")?;
-        let to_token_worth_before_swap = SymmetryMath::amount_to_usd_value(
-            fund_state.current_comp_amount[to_token_index],
-            to_token_settings.decimals,
-            to_token_price.avg_price,
-        )?;
+//         let from_token_worth_before_swap = SymmetryMath::amount_to_usd_value(
+//             fund_state.current_comp_amount[from_token_index],
+//             from_token_settings.decimals,
+//             from_token_price.avg_price,
+//         )
+//         .context("mul div err")?;
+//         let to_token_worth_before_swap = SymmetryMath::amount_to_usd_value(
+//             fund_state.current_comp_amount[to_token_index],
+//             to_token_settings.decimals,
+//             to_token_price.avg_price,
+//         )?;
 
-        let safe_from_amount = from_amount * 101 / 100;
-        let from_token_worth_after_swap = SymmetryMath::amount_to_usd_value(
-            fund_state.current_comp_amount[from_token_index] + safe_from_amount,
-            from_token_settings.decimals,
-            from_token_price.avg_price,
-        )?;
-        let mut safe_to_amount = (amount_without_fees - fund_fee) * 101 / 100;
-        if safe_to_amount > fund_state.current_comp_amount[to_token_index] {
-            safe_to_amount = fund_state.current_comp_amount[to_token_index];
-        }
-        let to_token_worth_after_swap = SymmetryMath::amount_to_usd_value(
-            fund_state.current_comp_amount[to_token_index] - safe_to_amount,
-            to_token_settings.decimals,
-            to_token_price.avg_price,
-        )?;
+//         let safe_from_amount = from_amount * 101 / 100;
+//         let from_token_worth_after_swap = SymmetryMath::amount_to_usd_value(
+//             fund_state.current_comp_amount[from_token_index] + safe_from_amount,
+//             from_token_settings.decimals,
+//             from_token_price.avg_price,
+//         )?;
+//         let mut safe_to_amount = (amount_without_fees - fund_fee) * 101 / 100;
+//         if safe_to_amount > fund_state.current_comp_amount[to_token_index] {
+//             safe_to_amount = fund_state.current_comp_amount[to_token_index];
+//         }
+//         let to_token_worth_after_swap = SymmetryMath::amount_to_usd_value(
+//             fund_state.current_comp_amount[to_token_index] - safe_to_amount,
+//             to_token_settings.decimals,
+//             to_token_price.avg_price,
+//         )?;
 
-        fund_worth = fund_worth + from_token_worth_after_swap;
-        fund_worth = fund_worth + to_token_worth_after_swap;
-        fund_worth = if fund_worth < from_token_worth_before_swap {
-            0
-        } else {
-            fund_worth - from_token_worth_before_swap
-        };
-        fund_worth = if fund_worth < to_token_worth_before_swap {
-            0
-        } else {
-            fund_worth - to_token_worth_before_swap
-        };
+//         fund_worth = fund_worth + from_token_worth_after_swap;
+//         fund_worth = fund_worth + to_token_worth_after_swap;
+//         fund_worth = if fund_worth < from_token_worth_before_swap {
+//             0
+//         } else {
+//             fund_worth - from_token_worth_before_swap
+//         };
+//         fund_worth = if fund_worth < to_token_worth_before_swap {
+//             0
+//         } else {
+//             fund_worth - to_token_worth_before_swap
+//         };
 
-        let from_new_weight =
-            SymmetryMath::mul_div(from_token_worth_after_swap, WEIGHT_MULTIPLIER, fund_worth)
-                .context("mul div err")?;
-        let to_new_weight =
-            SymmetryMath::mul_div(to_token_worth_after_swap, WEIGHT_MULTIPLIER, fund_worth)
-                .context("mul div err")?;
+//         let from_new_weight =
+//             SymmetryMath::mul_div(from_token_worth_after_swap, WEIGHT_MULTIPLIER, fund_worth)
+//                 .context("mul div err")?;
+//         let to_new_weight =
+//             SymmetryMath::mul_div(to_token_worth_after_swap, WEIGHT_MULTIPLIER, fund_worth)
+//                 .context("mul div err")?;
 
-        let allowed_offset = fund_state.rebalance_threshold * fund_state.lp_offset_threshold;
+//         let allowed_offset = fund_state.rebalance_threshold * fund_state.lp_offset_threshold;
 
-        let mut allowed_from_target_weight = SymmetryMath::mul_div(
-            fund_state.target_weight[from_token_index],
-            BPS_DIVIDER * BPS_DIVIDER + allowed_offset,
-            BPS_DIVIDER * BPS_DIVIDER,
-        )
-        .context("mul div err")?;
-        let allowed_to_target_weight = SymmetryMath::mul_div(
-            fund_state.target_weight[to_token_index],
-            BPS_DIVIDER * BPS_DIVIDER - allowed_offset,
-            BPS_DIVIDER * BPS_DIVIDER,
-        )
-        .context("mul div err")?;
-        if allowed_from_target_weight > WEIGHT_MULTIPLIER {
-            allowed_from_target_weight = WEIGHT_MULTIPLIER;
-        }
+//         let mut allowed_from_target_weight = SymmetryMath::mul_div(
+//             fund_state.target_weight[from_token_index],
+//             BPS_DIVIDER * BPS_DIVIDER + allowed_offset,
+//             BPS_DIVIDER * BPS_DIVIDER,
+//         )
+//         .context("mul div err")?;
+//         let allowed_to_target_weight = SymmetryMath::mul_div(
+//             fund_state.target_weight[to_token_index],
+//             BPS_DIVIDER * BPS_DIVIDER - allowed_offset,
+//             BPS_DIVIDER * BPS_DIVIDER,
+//         )
+//         .context("mul div err")?;
+//         if allowed_from_target_weight > WEIGHT_MULTIPLIER {
+//             allowed_from_target_weight = WEIGHT_MULTIPLIER;
+//         }
 
-        let removing_dust = from_token_id == 0 && fund_state.target_weight[to_token_index] == 0;
+//         let removing_dust = from_token_id == 0 && fund_state.target_weight[to_token_index] == 0;
 
-        if from_new_weight > allowed_from_target_weight && (!removing_dust) {
-            return Err(Error::msg("From token weight exceeds max allowed weight"));
-        }
+//         if from_new_weight > allowed_from_target_weight && (!removing_dust) {
+//             return Err(Error::msg("From token weight exceeds max allowed weight"));
+//         }
 
-        if to_new_weight < allowed_to_target_weight {
-            return Err(Error::msg("To token weight exceeds min allowed weight"));
-        }
+//         if to_new_weight < allowed_to_target_weight {
+//             return Err(Error::msg("To token weight exceeds min allowed weight"));
+//         }
 
-        Ok(Quote {
-            in_amount: quote_params.amount,
-            out_amount: to_amount,
-            fee_amount: total_fees,
-            fee_mint: quote_params.output_mint,
-            fee_pct: Decimal::new(fee_bps as i64, 4),
-            ..Quote::default()
-        })
-    }
+//         Ok(Quote {
+//             in_amount: quote_params.amount,
+//             out_amount: to_amount,
+//             fee_amount: total_fees,
+//             fee_mint: quote_params.output_mint,
+//             fee_pct: Decimal::new(fee_bps as i64, 4),
+//             ..Quote::default()
+//         })
+//     }
 
-    fn get_swap_and_account_metas(&self, swap_params: &SwapParams) -> Result<SwapAndAccountMetas> {
-        let SwapParams {
-            in_amount,
-            source_mint,
-            destination_mint,
-            source_token_account,
-            destination_token_account,
-            token_transfer_authority,
-            open_order_address,
-            quote_mint_to_referrer,
-            jupiter_program_id,
-            ..
-        } = swap_params;
+//     fn get_swap_and_account_metas(&self, swap_params: &SwapParams) -> Result<SwapAndAccountMetas> {
+//         let SwapParams {
+//             in_amount,
+//             source_mint,
+//             destination_mint,
+//             source_token_account,
+//             destination_token_account,
+//             token_transfer_authority,
+//             open_order_address,
+//             quote_mint_to_referrer,
+//             jupiter_program_id,
+//             ..
+//         } = swap_params;
 
-        let token_list = self
-            .token_list
-            .ok_or_else(|| anyhow!("token list is empty"))?;
-        let from_token_id_option = token_list
-            .list
-            .iter()
-            .position(|&x| x.token_mint == *source_mint);
-        let to_token_id_option = token_list
-            .list
-            .iter()
-            .position(|&x| x.token_mint == *destination_mint);
+//         let token_list = self
+//             .token_list
+//             .ok_or_else(|| anyhow!("token list is empty"))?;
+//         let from_token_id_option = token_list
+//             .list
+//             .iter()
+//             .position(|&x| x.token_mint == *source_mint);
+//         let to_token_id_option = token_list
+//             .list
+//             .iter()
+//             .position(|&x| x.token_mint == *destination_mint);
 
-        if from_token_id_option.is_none() {
-            return Err(Error::msg("From token not found in supported tokens"));
-        }
-        if to_token_id_option.is_none() {
-            return Err(Error::msg("To token not found in supported tokens"));
-        }
+//         if from_token_id_option.is_none() {
+//             return Err(Error::msg("From token not found in supported tokens"));
+//         }
+//         if to_token_id_option.is_none() {
+//             return Err(Error::msg("To token not found in supported tokens"));
+//         }
 
-        let from_token_id: u64 = from_token_id_option.unwrap() as u64;
-        let to_token_id: u64 = to_token_id_option.unwrap() as u64;
+//         let from_token_id: u64 = from_token_id_option.unwrap() as u64;
+//         let to_token_id: u64 = to_token_id_option.unwrap() as u64;
 
-        let swap_to_fee: Pubkey = Pubkey::find_program_address(
-            &[
-                &SWAP_FEE_ADDRESS.to_bytes(),
-                &spl_token::ID.to_bytes(),
-                &destination_mint.to_bytes(),
-            ],
-            &spl_associated_token_account::ID,
-        )
-        .0;
-        let host_to_fee: Pubkey = Pubkey::find_program_address(
-            &[
-                &self.fund_state.host_pubkey.to_bytes(),
-                &spl_token::ID.to_bytes(),
-                &destination_mint.to_bytes(),
-            ],
-            &spl_associated_token_account::ID,
-        )
-        .0;
-        let manager_to_fee: Pubkey = Pubkey::find_program_address(
-            &[
-                &self.fund_state.manager.to_bytes(),
-                &spl_token::ID.to_bytes(),
-                &destination_mint.to_bytes(),
-            ],
-            &spl_associated_token_account::ID,
-        )
-        .0;
+//         let swap_to_fee: Pubkey = Pubkey::find_program_address(
+//             &[
+//                 &SWAP_FEE_ADDRESS.to_bytes(),
+//                 &spl_token::ID.to_bytes(),
+//                 &destination_mint.to_bytes(),
+//             ],
+//             &spl_associated_token_account::ID,
+//         )
+//         .0;
+//         let host_to_fee: Pubkey = Pubkey::find_program_address(
+//             &[
+//                 &self.fund_state.host_pubkey.to_bytes(),
+//                 &spl_token::ID.to_bytes(),
+//                 &destination_mint.to_bytes(),
+//             ],
+//             &spl_associated_token_account::ID,
+//         )
+//         .0;
+//         let manager_to_fee: Pubkey = Pubkey::find_program_address(
+//             &[
+//                 &self.fund_state.manager.to_bytes(),
+//                 &spl_token::ID.to_bytes(),
+//                 &destination_mint.to_bytes(),
+//             ],
+//             &spl_associated_token_account::ID,
+//         )
+//         .0;
 
-        let mut account_metas: Vec<AccountMeta> = Vec::new();
-        account_metas.push(AccountMeta::new(*token_transfer_authority, true));
-        account_metas.push(AccountMeta::new(self.key, false));
-        account_metas.push(AccountMeta::new_readonly(PDA_ADDRESS, false));
-        account_metas.push(AccountMeta::new(
-            token_list.list[from_token_id as usize].pda_token_account,
-            false,
-        ));
-        account_metas.push(AccountMeta::new(*source_token_account, false));
-        account_metas.push(AccountMeta::new(
-            token_list.list[to_token_id as usize].pda_token_account,
-            false,
-        ));
-        account_metas.push(AccountMeta::new(*destination_token_account, false));
-        account_metas.push(AccountMeta::new(swap_to_fee, false));
-        account_metas.push(AccountMeta::new(host_to_fee, false));
-        account_metas.push(AccountMeta::new(manager_to_fee, false));
-        account_metas.push(AccountMeta::new_readonly(TOKEN_LIST_ADDRESS, false));
-        account_metas.push(AccountMeta::new_readonly(CURVE_DATA_ADDRESS, false));
-        account_metas.push(AccountMeta::new_readonly(spl_token::ID, false));
+//         let mut account_metas: Vec<AccountMeta> = Vec::new();
+//         account_metas.push(AccountMeta::new(*token_transfer_authority, true));
+//         account_metas.push(AccountMeta::new(self.key, false));
+//         account_metas.push(AccountMeta::new_readonly(PDA_ADDRESS, false));
+//         account_metas.push(AccountMeta::new(
+//             token_list.list[from_token_id as usize].pda_token_account,
+//             false,
+//         ));
+//         account_metas.push(AccountMeta::new(*source_token_account, false));
+//         account_metas.push(AccountMeta::new(
+//             token_list.list[to_token_id as usize].pda_token_account,
+//             false,
+//         ));
+//         account_metas.push(AccountMeta::new(*destination_token_account, false));
+//         account_metas.push(AccountMeta::new(swap_to_fee, false));
+//         account_metas.push(AccountMeta::new(host_to_fee, false));
+//         account_metas.push(AccountMeta::new(manager_to_fee, false));
+//         account_metas.push(AccountMeta::new_readonly(TOKEN_LIST_ADDRESS, false));
+//         account_metas.push(AccountMeta::new_readonly(CURVE_DATA_ADDRESS, false));
+//         account_metas.push(AccountMeta::new_readonly(spl_token::ID, false));
 
-        // Pyth Oracle accounts are being passed as remaining accounts
-        for i in 0..self.fund_state.num_of_tokens as usize {
-            account_metas.push(AccountMeta::new_readonly(
-                token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
-                false,
-            ));
-        }
+//         // Pyth Oracle accounts are being passed as remaining accounts
+//         for i in 0..self.fund_state.num_of_tokens as usize {
+//             account_metas.push(AccountMeta::new_readonly(
+//                 token_list.list[self.fund_state.current_comp_token[i] as usize].oracle_account,
+//                 false,
+//             ));
+//         }
 
-        let instruction_n: u64 = SYMMETRY_PROGRAM_SWAP_INSTRUCTION_ID;
-        let minimum_amount_out: u64 = 0;
-        let mut data = Vec::new();
-        data.extend_from_slice(&instruction_n.to_le_bytes());
-        data.extend_from_slice(&from_token_id.to_le_bytes());
-        data.extend_from_slice(&to_token_id.to_le_bytes());
-        data.extend_from_slice(&in_amount.to_le_bytes());
-        data.extend_from_slice(&minimum_amount_out.to_le_bytes());
+//         let instruction_n: u64 = SYMMETRY_PROGRAM_SWAP_INSTRUCTION_ID;
+//         let minimum_amount_out: u64 = 0;
+//         let mut data = Vec::new();
+//         data.extend_from_slice(&instruction_n.to_le_bytes());
+//         data.extend_from_slice(&from_token_id.to_le_bytes());
+//         data.extend_from_slice(&to_token_id.to_le_bytes());
+//         data.extend_from_slice(&in_amount.to_le_bytes());
+//         data.extend_from_slice(&minimum_amount_out.to_le_bytes());
 
-        let swap_instruction = Instruction {
-            program_id: SYMMETRY_PROGRAM_ADDRESS,
-            accounts: account_metas.clone(),
-            data,
-        };
+//         let swap_instruction = Instruction {
+//             program_id: SYMMETRY_PROGRAM_ADDRESS,
+//             accounts: account_metas.clone(),
+//             data,
+//         };
 
-        Ok(SwapAndAccountMetas {
-            swap: Swap::TokenSwap,
-            account_metas,
-        })
-    }
+//         Ok(SwapAndAccountMetas {
+//             swap: Swap::TokenSwap,
+//             account_metas,
+//         })
+//     }
 
-    fn clone_amm(&self) -> Box<dyn Amm + Send + Sync> {
-        todo!("ignore")
-    }
-}
+//     fn clone_amm(&self) -> Box<dyn Amm + Send + Sync> {
+//         todo!("ignore")
+//     }
+// }
 
 #[test]
 fn test_symetry_token_swap() {
