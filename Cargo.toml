@@ -1,14 +1,21 @@
 [workspace]
 members = ["symmetry-math"]
+resolver = "2"
 
 [workspace.package]
 edition = "2021"
 
 [workspace.dependencies]
-anchor-lang = "0.29"
-anchor-syn = "0.29"
-solana-sdk = "~1.18"
-solana-client = "~1.18"
-solana-program-test = "~1.18"
+anchor-lang = "0.30.1"
+anchor-syn = "0.30.1"
+solana-sdk = "2"
+solana-client = "2"
+solana-program-test = "2"
 
 anchor-gen = "0.3"
+
+[patch.crates-io]
+anchor-gen = { git = "https://github.com/jup-ag/anchor-gen.git", rev = "12ec783a50a68ba777aace7ff4d0e21cc6afc869" }                      # this is to prevent 0.24 anchor-syn from being used
+anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", rev = "4cdb0ebe8f613f7dbbd5c4b00571139b2517898f" }
+anchor-syn = { git = "https://github.com/coral-xyz/anchor.git", rev = "4cdb0ebe8f613f7dbbd5c4b00571139b2517898f" }
+spl-token-swap = { git = "https://github.com/solana-labs/solana-program-library.git", rev = "5ee81566b7333810f68e736065c83fa5b8b81fa6" }
