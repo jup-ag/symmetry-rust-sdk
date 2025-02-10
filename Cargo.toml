@@ -16,6 +16,6 @@ anchor-gen = "0.3"
 
 [patch.crates-io]
 anchor-gen = { git = "https://github.com/jup-ag/anchor-gen.git", rev = "12ec783a50a68ba777aace7ff4d0e21cc6afc869" }                      # this is to prevent 0.24 anchor-syn from being used
-anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", rev = "4cdb0ebe8f613f7dbbd5c4b00571139b2517898f" }
-anchor-syn = { git = "https://github.com/coral-xyz/anchor.git", rev = "4cdb0ebe8f613f7dbbd5c4b00571139b2517898f" }
-spl-token-swap = { git = "https://github.com/solana-labs/solana-program-library.git", rev = "5ee81566b7333810f68e736065c83fa5b8b81fa6" }
+anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", rev = "16e166cae1b92e1e096794e2213c5bceb9df2288" }
+anchor-syn = { git = "https://github.com/coral-xyz/anchor.git", rev = "16e166cae1b92e1e096794e2213c5bceb9df2288" }
+spl-token-swap = { git = "https://github.com/solana-labs/solana-program-library.git", rev = "63b217336276c1e41163a5ac030d1b5a85741782" }

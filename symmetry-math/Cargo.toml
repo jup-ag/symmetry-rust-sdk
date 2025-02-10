@@ -16,5 +16,5 @@ anyhow = "1.0"
 serde = "1.0.140"
 lazy_static = "1.2.0"
 rust_decimal = "1.26.1"
-jupiter-amm-interface = "0.4.5"
+jupiter-amm-interface = "0.5"
 spl-associated-token-account = { version = ">=5", features = ["no-entrypoint"] }
